@@ -193,7 +193,7 @@ function City(props: {
     points: Vector2[][];
   };
 }) {
-  const { bbox, data, depth, idx } = props;
+  const { bbox, data, depth } = props;
   const materialRef = useRef<ShaderMaterial>(null!);
   const skirtRef = useRef<Mesh>(null!);
   const terrainRef = useRef<Mesh>(null!);
