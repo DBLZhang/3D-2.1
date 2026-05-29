@@ -397,6 +397,7 @@ export default function CustomizerPanel() {
   const [isOpen, setIsOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const floorFileInputRef = useRef<HTMLInputElement>(null);
+  const skyFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     heightScale,
@@ -419,6 +420,10 @@ export default function CustomizerPanel() {
     skyAzimuth,
     skyRayleigh,
     skyTurbidity,
+    skyMode,
+    skyImage,
+    skySunGlow,
+    skySunScale,
     setField,
     reset,
   } = useConfigStore();
@@ -464,6 +469,24 @@ export default function CustomizerPanel() {
     setField("floorImage", null);
     if (floorFileInputRef.current) {
       floorFileInputRef.current.value = "";
+    }
+  };
+
+  const handleSkyImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setField("skyImage", event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveSkyImage = () => {
+    setField("skyImage", null);
+    if (skyFileInputRef.current) {
+      skyFileInputRef.current.value = "";
     }
   };
 
@@ -587,70 +610,145 @@ export default function CustomizerPanel() {
             <path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h-2M6.34 17.66l-1.41 1.41M12 20v2M19.07 19.07l-1.41-1.41M22 12h-2M17.66 6.34l1.41-1.41" />
             <circle cx="12" cy="12" r="4" />
           </svg>
-          天空与昼夜系统 (Atmospheric Sky)
+          天空与昼夜系统 (Atmospheric & Skybox)
         </SectionTitle>
         <ControlGroup>
           <div>
-            <LabelRow>
-              <span>太阳高度 / 昼夜时间</span>
-              <ValueDisplay>
-                {skyInclination > 0.15 ? "☀️ 白昼" : skyInclination > 0.0 ? "🌅 黄昏" : "🌌 极夜"} ({skyInclination.toFixed(2)})
-              </ValueDisplay>
-            </LabelRow>
-            <Slider
-              type="range"
-              min="-0.05"
-              max="0.55"
-              step="0.01"
-              value={skyInclination}
-              onChange={(e) => setField("skyInclination", parseFloat(e.target.value))}
-            />
+            <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>天空背景显示模式</span>
+            <ChipContainer>
+              <Chip $active={skyMode === "procedural"} onClick={() => setField("skyMode", "procedural")}>
+                💡 物理大气 (动态昼夜)
+              </Chip>
+              <Chip $active={skyMode === "panorama"} onClick={() => setField("skyMode", "panorama")}>
+                🌌 360° 全景背景贴图
+              </Chip>
+            </ChipContainer>
           </div>
 
-          <div>
-            <LabelRow>
-              <span>太阳方位角 (自转方向)</span>
-              <ValueDisplay>{skyAzimuth.toFixed(2)}</ValueDisplay>
-            </LabelRow>
-            <Slider
-              type="range"
-              min="0.0"
-              max="1.0"
-              step="0.01"
-              value={skyAzimuth}
-              onChange={(e) => setField("skyAzimuth", parseFloat(e.target.value))}
-            />
-          </div>
+          {skyMode === "procedural" ? (
+            <>
+              <div>
+                <LabelRow>
+                  <span>太阳高度 / 昼夜时间</span>
+                  <ValueDisplay>
+                    {skyInclination > 0.15 ? "☀️ 白昼" : skyInclination > 0.0 ? "🌅 黄昏" : "🌌 极夜"} ({skyInclination.toFixed(2)})
+                  </ValueDisplay>
+                </LabelRow>
+                <Slider
+                  type="range"
+                  min="-0.05"
+                  max="0.55"
+                  step="0.01"
+                  value={skyInclination}
+                  onChange={(e) => setField("skyInclination", parseFloat(e.target.value))}
+                />
+              </div>
 
-          <div>
-            <LabelRow>
-              <span>大气散射厚度 (Rayleigh)</span>
-              <ValueDisplay>{skyRayleigh.toFixed(1)}</ValueDisplay>
-            </LabelRow>
-            <Slider
-              type="range"
-              min="0.0"
-              max="10.0"
-              step="0.1"
-              value={skyRayleigh}
-              onChange={(e) => setField("skyRayleigh", parseFloat(e.target.value))}
-            />
-          </div>
+              <div>
+                <LabelRow>
+                  <span>太阳方位角 (自转方向)</span>
+                  <ValueDisplay>{skyAzimuth.toFixed(2)}</ValueDisplay>
+                </LabelRow>
+                <Slider
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.01"
+                  value={skyAzimuth}
+                  onChange={(e) => setField("skyAzimuth", parseFloat(e.target.value))}
+                />
+              </div>
 
-          <div>
-            <LabelRow>
-              <span>空气浑浊度 (Haze / Turbidity)</span>
-              <ValueDisplay>{skyTurbidity.toFixed(1)}</ValueDisplay>
-            </LabelRow>
-            <Slider
-              type="range"
-              min="0.0"
-              max="20.0"
-              step="0.1"
-              value={skyTurbidity}
-              onChange={(e) => setField("skyTurbidity", parseFloat(e.target.value))}
-            />
-          </div>
+              <div>
+                <LabelRow>
+                  <span>大气散射厚度 (Rayleigh)</span>
+                  <ValueDisplay>{skyRayleigh.toFixed(1)}</ValueDisplay>
+                </LabelRow>
+                <Slider
+                  type="range"
+                  min="0.0"
+                  max="10.0"
+                  step="0.1"
+                  value={skyRayleigh}
+                  onChange={(e) => setField("skyRayleigh", parseFloat(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <LabelRow>
+                  <span>空气浑浊度 (Haze / Turbidity)</span>
+                  <ValueDisplay>{skyTurbidity.toFixed(1)}</ValueDisplay>
+                </LabelRow>
+                <Slider
+                  type="range"
+                  min="0.0"
+                  max="20.0"
+                  step="0.1"
+                  value={skyTurbidity}
+                  onChange={(e) => setField("skyTurbidity", parseFloat(e.target.value))}
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>上传 360° 全景背景图 (等距柱状投影)</span>
+              {skyImage ? (
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <img
+                    src={skyImage}
+                    alt="skybox preview"
+                    style={{ width: "90px", height: "45px", borderRadius: "4px", border: "1px solid #444", objectFit: "cover" }}
+                  />
+                  <RemoveImageBtn onClick={handleRemoveSkyImage} style={{ flex: 1, padding: "8px", borderRadius: "6px" }}>
+                    🗑️ 移除并使用内置星空
+                  </RemoveImageBtn>
+                </div>
+              ) : (
+                <UploadButton style={{ width: "100%", padding: "10px" }}>
+                  📁 上传 2:1 全景图 (JPG/PNG)
+                  <input
+                    ref={skyFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSkyImageUpload}
+                    style={{ display: "none" }}
+                  />
+                </UploadButton>
+              )}
+            </div>
+          )}
+
+          <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0" }} />
+
+          {/* 3D Glowing Sun Entity controls */}
+          <TilingBox>
+            <span>3D 实体发光太阳 (3D Sun body)</span>
+            <SwitchContainer>
+              <SwitchInput
+                type="checkbox"
+                checked={skySunGlow}
+                onChange={(e) => setField("skySunGlow", e.target.checked)}
+              />
+              <SwitchSlider $checked={skySunGlow} />
+            </SwitchContainer>
+          </TilingBox>
+
+          {skySunGlow && (
+            <div>
+              <LabelRow>
+                <span>3D 发光太阳尺寸</span>
+                <ValueDisplay>{skySunScale.toFixed(0)}x</ValueDisplay>
+              </LabelRow>
+              <Slider
+                type="range"
+                min="2.0"
+                max="30.0"
+                step="1.0"
+                value={skySunScale}
+                onChange={(e) => setField("skySunScale", parseFloat(e.target.value))}
+              />
+            </div>
+          )}
         </ControlGroup>
       </Section>
 
