@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import { Center, useTexture } from "@react-three/drei";
 import {
   Box2,
+  Color,
   DoubleSide,
   Mesh,
   ShaderMaterial,
@@ -194,6 +195,8 @@ function City(props: {
   };
 }) {
   const { bbox, data, depth } = props;
+  const heightScale = useConfigStore((s) => s.heightScale);
+  const skirtColor = useConfigStore((s) => s.skirtColor);
   const materialRef = useRef<ShaderMaterial>(null!);
   const skirtRef = useRef<Mesh>(null!);
   const terrainRef = useRef<Mesh>(null!);
@@ -289,7 +292,7 @@ function City(props: {
       const worldX = centerX + px;
       const worldY = centerY + py;
 
-      const h = getInterpolatedHeight(worldX, worldY);
+      const h = getInterpolatedHeight(worldX, worldY, heightScale);
       pos.setZ(i, h);
 
       const u = (worldX - bbox.min.x) / cityW;
@@ -301,21 +304,21 @@ function City(props: {
     geom.computeVertexNormals();
 
     return { geom, centerX, centerY };
-  }, [bbox, townBBox, tWidth, tHeight, cityW, cityH]);
+  }, [bbox, townBBox, tWidth, tHeight, cityW, cityH, heightScale]);
 
   // Generate 3D boundary lines (contour outlines) that ride the elevation curves
   const threeDBoundaryGeoms = useMemo(() => {
     return data.points.map((ring) => {
       const points3D: number[] = [];
       ring.forEach((p) => {
-        const h = getInterpolatedHeight(p.x, p.y);
+        const h = getInterpolatedHeight(p.x, p.y, heightScale);
         points3D.push(p.x, p.y, h);
       });
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(points3D, 3));
       return geom;
     });
-  }, [data.points]);
+  }, [data.points, heightScale]);
 
   // Generate 3D vertical skirt (side walls) whose heights dynamically match the boundary elevations
   const skirtGeom = useMemo(() => {
@@ -327,7 +330,7 @@ function City(props: {
       const len = ring.length;
       if (len < 2) return;
 
-      const heights = ring.map((p) => getInterpolatedHeight(p.x, p.y));
+      const heights = ring.map((p) => getInterpolatedHeight(p.x, p.y, heightScale));
 
       for (let i = 0; i < len; i++) {
         const nextIdx = (i + 1) % len;
@@ -361,7 +364,7 @@ function City(props: {
     geom.setIndex(indices);
     geom.computeVertexNormals();
     return geom;
-  }, [data.points]);
+  }, [data.points, heightScale]);
 
   const terrainMatRef = useRef<any>(null!);
 
@@ -412,7 +415,7 @@ function City(props: {
     }
     
     if (labelGroupRef.current) {
-      const centerH = getInterpolatedHeight(data.center.x, data.center.y);
+      const centerH = getInterpolatedHeight(data.center.x, data.center.y, heightScale);
       labelGroupRef.current.position.z = centerH * currentScaleZ.current + 0.15;
     }
 
@@ -452,6 +455,8 @@ function City(props: {
             opacity={0}
             depth={depth}
             side={DoubleSide}
+            baseTopColor={new Color(skirtColor)}
+            scanColor={new Color(skirtColor)}
           />
         </mesh>
       )}

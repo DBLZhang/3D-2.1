@@ -15,9 +15,9 @@ const minH = (() => {
 
 /**
  * Computes the interpolated terrain height in Three.js units for any coordinate (x, y).
- * Maps minH - maxHeight raw elevation to 0 - 1.1 units in Three.js space (50% flattened from 2.2).
+ * Maps minH - maxHeight raw elevation to 0 - heightScale units in Three.js space.
  */
-export function getInterpolatedHeight(x: number, y: number): number {
+export function getInterpolatedHeight(x: number, y: number, heightScale: number = 1.1): number {
   const u = Math.min(1, Math.max(0, (x - minX) / (maxX - minX)));
   const v = Math.min(1, Math.max(0, (y - minY) / (maxY - minY)));
   
@@ -42,7 +42,7 @@ export function getInterpolatedHeight(x: number, y: number): number {
   
   const h = h0 * (1 - fY) + h1 * fY;
   
-  // Normalize elevation: map minH - maxHeight to a realistic height e.g. 0 to 1.1 units
+  // Normalize elevation: map minH - maxHeight to a realistic height e.g. 0 to heightScale units
   const normalized = (h - minH) / (maxHeight - minH);
-  return normalized * 1.1;
+  return normalized * heightScale;
 }

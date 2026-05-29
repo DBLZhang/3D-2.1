@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame, type ThreeElements } from "@react-three/fiber";
 import {
   AdditiveBlending,
@@ -9,6 +9,7 @@ import {
   type Mesh,
 } from "three";
 import { Instance, Instances, useTexture } from "@react-three/drei";
+import { useConfigStore } from "../stores";
 
 import guangquan01 from "@/assets/guangquan01.png";
 
@@ -23,19 +24,30 @@ export interface ConesProps {
 }
 
 export default function Cones(props: ConesProps) {
-  const { color = new Color(0x8fc2ff), depth = 0.45 } = props;
+  const customColor = useConfigStore((s) => s.coneColor);
+  const coneStyle = useConfigStore((s) => s.coneStyle);
+
+  const { depth = 0.45 } = props;
   const texture1 = useTexture(guangquan01);
+
+  const finalColor = useMemo(() => new Color(customColor), [customColor]);
 
   return (
     <group position-z={0} renderOrder={5}>
       <Instances
+        key={coneStyle} // Add key to force recreate instances when geometry swaps to prevent cache mismatch
         limit={props.data.length}
         position-z={depth + 0.2}
         raycast={() => null}>
-        <coneGeometry args={[0.3, 0.5, 4]} />
+        {coneStyle === "cone" && <coneGeometry args={[0.3, 0.5, 4]} />}
+        {coneStyle === "smooth-cone" && <coneGeometry args={[0.3, 0.6, 32]} />}
+        {coneStyle === "cylinder" && <cylinderGeometry args={[0.12, 0.12, 0.6, 16]} />}
+        {coneStyle === "sphere" && <sphereGeometry args={[0.22, 16, 16]} />}
+        {coneStyle === "box" && <boxGeometry args={[0.3, 0.3, 0.3]} />}
+        
         <meshBasicMaterial
           //   transparent
-          color={color}
+          color={finalColor}
           //   depthWrite={false}
           side={DoubleSide}
           blending={AdditiveBlending}
@@ -48,7 +60,7 @@ export default function Cones(props: ConesProps) {
         <planeGeometry args={[0.8, 0.8]} />
         <meshBasicMaterial
           transparent
-          color={color}
+          color={finalColor}
           alphaMap={texture1}
           opacity={1}
           depthTest={false}

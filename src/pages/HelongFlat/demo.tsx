@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import styled from "styled-components";
 import { useConfigStore } from "./stores";
 import Map from "./map";
+import CustomizerPanel from "./map/customizerPanel";
 
 const Wrapper = styled.div`
   position: fixed;
@@ -19,6 +20,7 @@ export default function Index() {
   return (
     <Wrapper>
       <Map />
+      <CustomizerPanel />
     </Wrapper>
   );
 }

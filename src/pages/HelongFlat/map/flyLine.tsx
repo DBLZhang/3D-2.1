@@ -8,6 +8,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
+import { useConfigStore } from "../stores";
 
 import flyLine from "@/assets/fly_line.png";
 
@@ -21,6 +22,7 @@ export interface FlyLineProps {
 }
 
 export default function FlyLine(props: FlyLineProps) {
+  const flyLineColor = useConfigStore((s) => s.flyLineColor);
   const { data, depth = 0.45 } = props;
   const texture = useTexture(flyLine, (tex) => {
     tex.wrapS = tex.wrapT = RepeatWrapping;
@@ -51,7 +53,7 @@ export default function FlyLine(props: FlyLineProps) {
           <tubeGeometry args={[el, 32, 0.1, 2, false]} />
           <meshBasicMaterial
             transparent
-            color={0x8fc2ff}
+            color={flyLineColor}
             fog={false}
             map={texture}
             opacity={0}

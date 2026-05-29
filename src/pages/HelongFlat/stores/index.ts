@@ -1,16 +1,74 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type ConeStyle = "cone" | "smooth-cone" | "cylinder" | "sphere" | "box";
+
 interface ConfigStore {
   mapPlayComplete: boolean;
-  toggle: (key: keyof Omit<ConfigStore, "toggle">) => void;
+  
+  // Customizer Settings
+  heightScale: number;
+  beamColor: string;
+  lightMainColor: string;
+  lightFillColor: string;
+  flyLineColor: string;
+  labelColor: string;
+  coneColor: string;
+  coneStyle: ConeStyle;
+  
+  // Background & Skirt Customizations
+  bgColor: string;
+  skirtColor: string;
+  bgImage: string | null;
+  bgRepeat: boolean;
+  bgSize: number;
+
+  toggle: (key: keyof Omit<ConfigStore, "toggle" | "reset" | "setField">) => void;
+  setField: <K extends keyof Omit<ConfigStore, "toggle" | "reset" | "setField">>(
+    key: K,
+    value: ConfigStore[K]
+  ) => void;
   reset: () => void;
 }
 
 export const useConfigStore = create<ConfigStore>()(
-  subscribeWithSelector((set, _, store) => ({
+  subscribeWithSelector((set) => ({
     mapPlayComplete: false,
+    heightScale: 1.1,
+    beamColor: "#8fc2ff",
+    lightMainColor: "#ffffff",
+    lightFillColor: "#4a90e2",
+    flyLineColor: "#8fc2ff",
+    labelColor: "#ffffff",
+    coneColor: "#8fc2ff",
+    coneStyle: "cone",
+    
+    bgColor: "#000000",
+    skirtColor: "#8fc2ff",
+    bgImage: null,
+    bgRepeat: false,
+    bgSize: 200,
+
     toggle: (key) => set((s) => ({ [key]: !s[key] })),
-    reset: () => set(store.getInitialState()),
+    setField: (key, value) => set(() => ({ [key]: value })),
+    reset: () =>
+      set({
+        mapPlayComplete: false,
+        heightScale: 1.1,
+        beamColor: "#8fc2ff",
+        lightMainColor: "#ffffff",
+        lightFillColor: "#4a90e2",
+        flyLineColor: "#8fc2ff",
+        labelColor: "#ffffff",
+        coneColor: "#8fc2ff",
+        coneStyle: "cone",
+        
+        bgColor: "#000000",
+        skirtColor: "#8fc2ff",
+        bgImage: null,
+        bgRepeat: false,
+        bgSize: 200,
+      }),
   }))
 );
+
