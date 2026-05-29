@@ -176,13 +176,14 @@ export default function Map() {
             <mesh scale={[-1, 1, 1]}>
               <sphereGeometry args={[450, 60, 40]} />
               {uploadedTexture ? (
-                <meshBasicMaterial map={uploadedTexture} toneMapped={false} side={DoubleSide} />
+                <meshBasicMaterial map={uploadedTexture} toneMapped={false} side={DoubleSide} fog={false} />
               ) : (
                 <shaderMaterial
                   attach="material"
                   args={[StarrySkyMaterial]}
                   side={DoubleSide}
                   depthWrite={false}
+                  fog={false}
                 />
               )}
             </mesh>
