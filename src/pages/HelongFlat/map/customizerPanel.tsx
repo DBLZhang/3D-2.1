@@ -415,6 +415,10 @@ export default function CustomizerPanel() {
     floorColor,
     floorImage,
     floorRepeat,
+    skyInclination,
+    skyAzimuth,
+    skyRayleigh,
+    skyTurbidity,
     setField,
     reset,
   } = useConfigStore();
@@ -564,6 +568,89 @@ export default function CustomizerPanel() {
               />
             </ColorPickerContainer>
           </ColorRow>
+        </ControlGroup>
+      </Section>
+
+      {/* 天空与昼夜系统 */}
+      <Section>
+        <SectionTitle>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h-2M6.34 17.66l-1.41 1.41M12 20v2M19.07 19.07l-1.41-1.41M22 12h-2M17.66 6.34l1.41-1.41" />
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+          天空与昼夜系统 (Atmospheric Sky)
+        </SectionTitle>
+        <ControlGroup>
+          <div>
+            <LabelRow>
+              <span>太阳高度 / 昼夜时间</span>
+              <ValueDisplay>
+                {skyInclination > 0.15 ? "☀️ 白昼" : skyInclination > 0.0 ? "🌅 黄昏" : "🌌 极夜"} ({skyInclination.toFixed(2)})
+              </ValueDisplay>
+            </LabelRow>
+            <Slider
+              type="range"
+              min="-0.05"
+              max="0.55"
+              step="0.01"
+              value={skyInclination}
+              onChange={(e) => setField("skyInclination", parseFloat(e.target.value))}
+            />
+          </div>
+
+          <div>
+            <LabelRow>
+              <span>太阳方位角 (自转方向)</span>
+              <ValueDisplay>{skyAzimuth.toFixed(2)}</ValueDisplay>
+            </LabelRow>
+            <Slider
+              type="range"
+              min="0.0"
+              max="1.0"
+              step="0.01"
+              value={skyAzimuth}
+              onChange={(e) => setField("skyAzimuth", parseFloat(e.target.value))}
+            />
+          </div>
+
+          <div>
+            <LabelRow>
+              <span>大气散射厚度 (Rayleigh)</span>
+              <ValueDisplay>{skyRayleigh.toFixed(1)}</ValueDisplay>
+            </LabelRow>
+            <Slider
+              type="range"
+              min="0.0"
+              max="10.0"
+              step="0.1"
+              value={skyRayleigh}
+              onChange={(e) => setField("skyRayleigh", parseFloat(e.target.value))}
+            />
+          </div>
+
+          <div>
+            <LabelRow>
+              <span>空气浑浊度 (Haze / Turbidity)</span>
+              <ValueDisplay>{skyTurbidity.toFixed(1)}</ValueDisplay>
+            </LabelRow>
+            <Slider
+              type="range"
+              min="0.0"
+              max="20.0"
+              step="0.1"
+              value={skyTurbidity}
+              onChange={(e) => setField("skyTurbidity", parseFloat(e.target.value))}
+            />
+          </div>
         </ControlGroup>
       </Section>
 

@@ -28,6 +28,12 @@ interface ConfigStore {
   floorImage: string | null;
   floorRepeat: number;
 
+  // Sky System Customizations
+  skyInclination: number;
+  skyAzimuth: number;
+  skyRayleigh: number;
+  skyTurbidity: number;
+
   toggle: (key: keyof Omit<ConfigStore, "toggle" | "reset" | "setField">) => void;
   setField: <K extends keyof Omit<ConfigStore, "toggle" | "reset" | "setField">>(
     key: K,
@@ -58,6 +64,11 @@ export const useConfigStore = create<ConfigStore>()(
     floorImage: null,
     floorRepeat: 20,
 
+    skyInclination: 0.3,
+    skyAzimuth: 0.25,
+    skyRayleigh: 3.0,
+    skyTurbidity: 8.0,
+
     toggle: (key) => set((s) => ({ [key]: !s[key] })),
     setField: (key, value) => set(() => ({ [key]: value })),
     reset: () =>
@@ -81,6 +92,11 @@ export const useConfigStore = create<ConfigStore>()(
         floorColor: "#011024",
         floorImage: null,
         floorRepeat: 20,
+
+        skyInclination: 0.3,
+        skyAzimuth: 0.25,
+        skyRayleigh: 3.0,
+        skyTurbidity: 8.0,
       }),
   }))
 );
