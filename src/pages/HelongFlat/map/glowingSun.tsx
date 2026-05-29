@@ -9,6 +9,7 @@ export default function GlowingSun() {
   const skySunGlow = useConfigStore((s) => s.skySunGlow);
   const skySunScale = useConfigStore((s) => s.skySunScale);
 
+  // Compute 3D sun position
   const sunPosition = useMemo(() => {
     const theta = Math.PI * skyInclination;
     const phi = 2 * Math.PI * (skyAzimuth - 0.5);
@@ -20,76 +21,199 @@ export default function GlowingSun() {
     ] as [number, number, number];
   }, [skyInclination, skyAzimuth]);
 
-  if (!skySunGlow) return null;
+  // Compute highly realistic color transitions based on sun angle (skyInclination)
+  const colors = useMemo(() => {
+    const sunColor = new THREE.Color();
+    const glowColor = new THREE.Color();
 
-  // Derive dynamic sun body color based on inclination
-  const isDay = skyInclination > 0.15;
-  const isSunset = skyInclination > 0.0;
-  const sunColor = isDay ? "#ffffff" : isSunset ? "#ff8800" : "#0d1e38";
-  const coronaColor = isDay ? "#ffeedd" : isSunset ? "#ff4400" : "#112244";
+    if (skyInclination > 0.2) {
+      // 1. Full Daytime: Bright warm yellow-white sun body, golden amber halo
+      sunColor.set("#fffaed");
+      glowColor.set("#ffd275");
+    } else if (skyInclination > 0.04) {
+      // 2. Sunset/Sunrise golden hours: interpolate smoothly to rich orange-red晚霞色
+      const t = (skyInclination - 0.04) / 0.16; // 0 (sunset) to 1 (day)
+      
+      const warmDaySun = new THREE.Color("#fffaed");
+      const sunsetRedSun = new THREE.Color("#ff3a00");
+      sunColor.copy(sunsetRedSun).lerp(warmDaySun, t);
+
+      const warmDayGlow = new THREE.Color("#ffd275");
+      const sunsetRedGlow = new THREE.Color("#ff2200");
+      glowColor.copy(sunsetRedGlow).lerp(warmDayGlow, t);
+    } else if (skyInclination > -0.02) {
+      // 3. Dusk/Dawn twilight: deep fiery twilight fading to night sky
+      const t = (skyInclination - (-0.02)) / 0.06; // 0 to 1
+      
+      const sunsetRedSun = new THREE.Color("#ff3a00");
+      const darkNightSun = new THREE.Color("#080c18");
+      sunColor.copy(darkNightSun).lerp(sunsetRedSun, Math.max(0, Math.min(1, t)));
+
+      const sunsetRedGlow = new THREE.Color("#ff2200");
+      const darkNightGlow = new THREE.Color("#04060d");
+      glowColor.copy(darkNightGlow).lerp(sunsetRedGlow, Math.max(0, Math.min(1, t)));
+    } else {
+      // 4. Midnight: dormant glowing sun core
+      sunColor.set("#080c18");
+      glowColor.set("#04060d");
+    }
+
+    return { sunColor, glowColor };
+  }, [skyInclination]);
+
+  // Reactive Uniforms for shader materials
+  const innerGlowUniforms = useMemo(() => {
+    return {
+      uColor: { value: colors.glowColor },
+      uOpacity: { value: 0.75 },
+      uPower: { value: 2.2 },
+    };
+  }, [colors.glowColor]);
+
+  const outerGlowUniforms = useMemo(() => {
+    return {
+      uColor: { value: colors.glowColor },
+      uOpacity: { value: 0.38 },
+      uPower: { value: 3.5 },
+    };
+  }, [colors.glowColor]);
+
+  const spikeUniforms = useMemo(() => {
+    return {
+      uColor: { value: colors.glowColor },
+      uOpacity: { value: 0.45 },
+    };
+  }, [colors.glowColor]);
+
+  if (!skySunGlow) return null;
 
   return (
     <group position={sunPosition}>
-      {/* 3D Core Sun Body */}
+      {/* 3D Warm Glowing Sun Core Body */}
       <mesh>
         <sphereGeometry args={[skySunScale, 32, 32]} />
         <meshBasicMaterial
-          color={sunColor}
+          color={colors.sunColor}
           toneMapped={false}
         />
       </mesh>
 
-      {/* Camera-Facing Additive Lens Flare System */}
+      {/* Cinematic camera-facing lens flare and diffuse light aura system */}
       <Billboard follow={true}>
-        {/* Inner intense glowing corona */}
+        {/* 1. Inner intense glowing corona with smooth radial decay */}
         <mesh>
-          <ringGeometry args={[0, skySunScale * 1.5, 64]} />
-          <meshBasicMaterial
-            color={coronaColor}
+          <planeGeometry args={[skySunScale * 3.2, skySunScale * 3.2]} />
+          <shaderMaterial
             transparent
-            opacity={0.45}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
             depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            uniforms={innerGlowUniforms}
+            vertexShader={`
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={`
+              varying vec2 vUv;
+              uniform vec3 uColor;
+              uniform float uOpacity;
+              uniform float uPower;
+              void main() {
+                float dist = length(vUv - vec2(0.5)) * 2.0;
+                if (dist > 1.0) discard;
+                float alpha = pow(1.0 - dist, uPower) * uOpacity;
+                gl_FragColor = vec4(uColor, alpha);
+              }
+            `}
           />
         </mesh>
 
-        {/* Outer broad ambient aura */}
+        {/* 2. Outer broad ambient aura with soft falloff */}
         <mesh>
-          <ringGeometry args={[0, skySunScale * 3.5, 64]} />
-          <meshBasicMaterial
-            color={coronaColor}
+          <planeGeometry args={[skySunScale * 7.5, skySunScale * 7.5]} />
+          <shaderMaterial
             transparent
-            opacity={0.25}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
             depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            uniforms={outerGlowUniforms}
+            vertexShader={`
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={`
+              varying vec2 vUv;
+              uniform vec3 uColor;
+              uniform float uOpacity;
+              uniform float uPower;
+              void main() {
+                float dist = length(vUv - vec2(0.5)) * 2.0;
+                if (dist > 1.0) discard;
+                float alpha = pow(1.0 - dist, uPower) * uOpacity;
+                gl_FragColor = vec4(uColor, alpha);
+              }
+            `}
           />
         </mesh>
 
-        {/* Horizontal lens flare bloom line */}
+        {/* 3. Horizontal lens flare spike (fading into thin needles at endpoints) */}
         <mesh>
-          <planeGeometry args={[skySunScale * 7.5, skySunScale * 0.18]} />
-          <meshBasicMaterial
-            color={coronaColor}
+          <planeGeometry args={[skySunScale * 14.0, skySunScale * 0.22]} />
+          <shaderMaterial
             transparent
-            opacity={0.35}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
             depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            uniforms={spikeUniforms}
+            vertexShader={`
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={`
+              varying vec2 vUv;
+              uniform vec3 uColor;
+              uniform float uOpacity;
+              void main() {
+                // Fade along X to needle endpoints, and fade along Y
+                float fadeX = pow(1.0 - abs(vUv.x - 0.5) * 2.0, 4.0);
+                float fadeY = 1.0 - abs(vUv.y - 0.5) * 2.0;
+                gl_FragColor = vec4(uColor, fadeX * fadeY * uOpacity);
+              }
+            `}
           />
         </mesh>
 
-        {/* Vertical lens flare bloom line */}
+        {/* 4. Vertical lens flare spike (fading into thin needles at endpoints) */}
         <mesh rotation={[0, 0, Math.PI / 2]}>
-          <planeGeometry args={[skySunScale * 7.5, skySunScale * 0.18]} />
-          <meshBasicMaterial
-            color={coronaColor}
+          <planeGeometry args={[skySunScale * 14.0, skySunScale * 0.22]} />
+          <shaderMaterial
             transparent
-            opacity={0.35}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
             depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            uniforms={spikeUniforms}
+            vertexShader={`
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={`
+              varying vec2 vUv;
+              uniform vec3 uColor;
+              uniform float uOpacity;
+              void main() {
+                float fadeX = pow(1.0 - abs(vUv.x - 0.5) * 2.0, 4.0);
+                float fadeY = 1.0 - abs(vUv.y - 0.5) * 2.0;
+                gl_FragColor = vec4(uColor, fadeX * fadeY * uOpacity);
+              }
+            `}
           />
         </mesh>
       </Billboard>
