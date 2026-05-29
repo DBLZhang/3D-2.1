@@ -30,6 +30,7 @@ export default function Map() {
           fov: 70,
           position: [3, 20, 10],
         }}
+        gl={{ stencil: true }}
         dpr={[1, 2]}>
           <fog attach="fog" args={["#000000", 10, 30]} />
           <color attach="background" args={["#000000"]} />

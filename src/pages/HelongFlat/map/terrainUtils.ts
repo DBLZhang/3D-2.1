@@ -2,9 +2,20 @@ import elevationData from "@/assets/helong_elevation.json";
 
 const { minX, maxX, minY, maxY, gridWidth, gridHeight, heights, maxHeight } = elevationData;
 
+// Find the minimum height to align the bottom of the terrain layer with Z = 0
+const minH = (() => {
+  let min = Infinity;
+  for (let r = 0; r < heights.length; r++) {
+    for (let c = 0; c < heights[r].length; c++) {
+      if (heights[r][c] < min) min = heights[r][c];
+    }
+  }
+  return min;
+})();
+
 /**
  * Computes the interpolated terrain height in Three.js units for any coordinate (x, y).
- * Maps 0m - maxHeight raw elevation to 0 - 2.2 units in Three.js space.
+ * Maps minH - maxHeight raw elevation to 0 - 1.1 units in Three.js space (50% flattened from 2.2).
  */
 export function getInterpolatedHeight(x: number, y: number): number {
   const u = Math.min(1, Math.max(0, (x - minX) / (maxX - minX)));
@@ -31,6 +42,7 @@ export function getInterpolatedHeight(x: number, y: number): number {
   
   const h = h0 * (1 - fY) + h1 * fY;
   
-  // Normalize elevation: map 0m - maxHeight to a realistic height e.g. 0 to 2.2 units
-  return (h / maxHeight) * 2.2;
+  // Normalize elevation: map minH - maxHeight to a realistic height e.g. 0 to 1.1 units
+  const normalized = (h - minH) / (maxHeight - minH);
+  return normalized * 1.1;
 }
