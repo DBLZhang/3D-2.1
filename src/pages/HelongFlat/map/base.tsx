@@ -24,6 +24,7 @@ import Label from "./label";
 import { useConfigStore } from "../stores";
 
 import helongTopography from "@/assets/helong_topography.png";
+import helongBump from "@/assets/helong_bump.bmp";
 import Cones from "./cone";
 
 export interface BaseProps {
@@ -197,6 +198,7 @@ function City(props: {
   const currentScaleZ = useRef(1.0);
 
   const topoTexture = useTexture(helongTopography);
+  const bumpTexture = useTexture(helongBump);
 
   const [shape, shapeGeometry] = useMemo(() => {
     const shapes = data.points.map((e) => new Shape(e));
@@ -270,9 +272,11 @@ function City(props: {
           transparent
           attach="material-0"
           map={topoTexture}
+          bumpMap={bumpTexture}
+          bumpScale={0.35}
           color="#ffffff"
           metalness={0.0}
-          roughness={1.0}
+          roughness={0.7}
           side={DoubleSide}
           opacity={0}
           onBeforeCompile={(shader: any) => {

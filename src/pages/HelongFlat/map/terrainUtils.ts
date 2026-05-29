@@ -1,10 +1,10 @@
 import elevationData from "@/assets/helong_elevation.json";
 
-const { minX, maxX, minY, maxY, gridWidth, gridHeight, heights } = elevationData;
+const { minX, maxX, minY, maxY, gridWidth, gridHeight, heights, maxHeight } = elevationData;
 
 /**
  * Computes the interpolated terrain height in Three.js units for any coordinate (x, y).
- * Maps 0m - 1662m raw elevation to 0 - 2.5 units in Three.js space.
+ * Maps 0m - maxHeight raw elevation to 0 - 2.2 units in Three.js space.
  */
 export function getInterpolatedHeight(x: number, y: number): number {
   const u = Math.min(1, Math.max(0, (x - minX) / (maxX - minX)));
@@ -31,6 +31,6 @@ export function getInterpolatedHeight(x: number, y: number): number {
   
   const h = h0 * (1 - fY) + h1 * fY;
   
-  // Normalize elevation: map 0m - 1662m to a realistic height e.g. 0 to 2.2 units
-  return (h / 1662) * 2.2;
+  // Normalize elevation: map 0m - maxHeight to a realistic height e.g. 0 to 2.2 units
+  return (h / maxHeight) * 2.2;
 }

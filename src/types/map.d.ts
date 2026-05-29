@@ -63,3 +63,8 @@ export type CityGeoJSON = GeoJSONFeatureCollection<
   CityProperties,
   { type: "MultiPolygon"; coordinates: number[][][][] }
 >;
+
+declare module "*.bmp" {
+  const src: string;
+  export default src;
+}
