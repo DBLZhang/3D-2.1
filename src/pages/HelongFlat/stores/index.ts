@@ -25,6 +25,7 @@ interface ConfigStore {
 
   // Ground Floor Customizations
   floorColor: string;
+  floorImageMode: "color" | "texture" | "custom";
   floorImage: string | null;
   floorRepeat: number;
 
@@ -34,6 +35,7 @@ interface ConfigStore {
   skyRayleigh: number;
   skyTurbidity: number;
   skyMode: "procedural" | "panorama";
+  skyPreset: "none" | "sunset" | "orchard" | "night";
   skyImage: string | null;
   skySunGlow: boolean;
   skySunScale: number;
@@ -65,7 +67,8 @@ export const useConfigStore = create<ConfigStore>()(
     bgSize: 200,
 
     floorColor: "#011024",
-    floorImage: null,
+    floorImageMode: "texture",
+    floorImage: "/textures/floor_texture_20x.png",
     floorRepeat: 20,
 
     skyInclination: 0.3,
@@ -73,6 +76,7 @@ export const useConfigStore = create<ConfigStore>()(
     skyRayleigh: 3.0,
     skyTurbidity: 8.0,
     skyMode: "procedural",
+    skyPreset: "none",
     skyImage: null,
     skySunGlow: true,
     skySunScale: 10,
@@ -98,7 +102,8 @@ export const useConfigStore = create<ConfigStore>()(
         bgSize: 200,
 
         floorColor: "#011024",
-        floorImage: null,
+        floorImageMode: "texture",
+        floorImage: "/textures/floor_texture_20x.png",
         floorRepeat: 20,
 
         skyInclination: 0.3,
@@ -106,6 +111,7 @@ export const useConfigStore = create<ConfigStore>()(
         skyRayleigh: 3.0,
         skyTurbidity: 8.0,
         skyMode: "procedural",
+        skyPreset: "none",
         skyImage: null,
         skySunGlow: true,
         skySunScale: 10,

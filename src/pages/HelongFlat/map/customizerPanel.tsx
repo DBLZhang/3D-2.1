@@ -421,9 +421,11 @@ export default function CustomizerPanel() {
     skyRayleigh,
     skyTurbidity,
     skyMode,
+    skyPreset,
     skyImage,
     skySunGlow,
     skySunScale,
+    floorImageMode,
     setField,
     reset,
   } = useConfigStore();
@@ -459,6 +461,7 @@ export default function CustomizerPanel() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
+        setField("floorImageMode", "custom");
         setField("floorImage", event.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -477,6 +480,7 @@ export default function CustomizerPanel() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
+        setField("skyPreset", "none");
         setField("skyImage", event.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -484,9 +488,35 @@ export default function CustomizerPanel() {
   };
 
   const handleRemoveSkyImage = () => {
+    setField("skyPreset", "none");
     setField("skyImage", null);
     if (skyFileInputRef.current) {
       skyFileInputRef.current.value = "";
+    }
+  };
+
+  const handleSelectSkyPreset = (preset: "none" | "sunset" | "orchard" | "night") => {
+    setField("skyPreset", preset);
+    if (preset === "none") {
+      setField("skyImage", null);
+    } else if (preset === "sunset") {
+      setField("skyImage", "/skybox/belfast_sunset_puresky.jpg");
+    } else if (preset === "orchard") {
+      setField("skyImage", "/skybox/citrus_orchard_puresky.jpg");
+    } else if (preset === "night") {
+      setField("skyImage", "/skybox/rogland_clear_night.jpg");
+    }
+  };
+
+  const handleSelectFloorMode = (mode: "color" | "texture" | "custom") => {
+    setField("floorImageMode", mode);
+    if (mode === "color") {
+      setField("floorImage", null);
+    } else if (mode === "texture") {
+      setField("floorImage", "/textures/floor_texture_20x.png");
+      setField("floorRepeat", 20);
+    } else if (mode === "custom") {
+      setField("floorImage", null);
     }
   };
 
@@ -691,8 +721,21 @@ export default function CustomizerPanel() {
             </>
           ) : (
             <div>
-              <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>上传 360° 全景背景图 (等距柱状投影)</span>
-              {skyImage ? (
+              <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>内置 360° 全景天空预设</span>
+              <ChipContainer style={{ marginBottom: "12px" }}>
+                <Chip $active={skyPreset === "sunset"} onClick={() => handleSelectSkyPreset("sunset")}>
+                  🌅 贝尔法斯特黄昏
+                </Chip>
+                <Chip $active={skyPreset === "orchard"} onClick={() => handleSelectSkyPreset("orchard")}>
+                  🍊 柑橘果园
+                </Chip>
+                <Chip $active={skyPreset === "night"} onClick={() => handleSelectSkyPreset("night")}>
+                  🌌 罗格兰晴空夜
+                </Chip>
+              </ChipContainer>
+
+              <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>自定义全景天空 (支持拖入上传)</span>
+              {skyImage && skyPreset === "none" ? (
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <img
                     src={skyImage}
@@ -705,7 +748,7 @@ export default function CustomizerPanel() {
                 </div>
               ) : (
                 <UploadButton style={{ width: "100%", padding: "10px" }}>
-                  📁 上传 2:1 全景图 (JPG/PNG)
+                  📁 上传 2:1 自定义全景图
                   <input
                     ref={skyFileInputRef}
                     type="file"
@@ -785,37 +828,54 @@ export default function CustomizerPanel() {
           </ColorRow>
 
           <div>
-            <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>地平面上传图片 / 拼接纹理</span>
-            {floorImage ? (
-              <ImagePreviewRow>
-                <span style={{ color: "#a6d0ff" }}>已成功载入拼接纹理</span>
-                <RemoveImageBtn onClick={handleRemoveFloorImage}>清除拼接纹理</RemoveImageBtn>
-              </ImagePreviewRow>
-            ) : (
-              <UploadButton>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                上传点阵 / 拼接纹理 (JPG/PNG)
-                <input
-                  ref={floorFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFloorImageUpload}
-                  style={{ display: "none" }}
-                />
-              </UploadButton>
-            )}
+            <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>地面填充样式</span>
+            <ChipContainer style={{ marginBottom: "12px" }}>
+              <Chip $active={floorImageMode === "color"} onClick={() => handleSelectFloorMode("color")}>
+                🎨 纯色与渐变
+              </Chip>
+              <Chip $active={floorImageMode === "texture"} onClick={() => handleSelectFloorMode("texture")}>
+                🏁 内置 20x 拼接纹理
+              </Chip>
+              <Chip $active={floorImageMode === "custom"} onClick={() => handleSelectFloorMode("custom")}>
+                📁 自定义纹理上传
+              </Chip>
+            </ChipContainer>
           </div>
+
+          {floorImageMode === "custom" && (
+            <div>
+              <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>上传点阵 / 拼接纹理</span>
+              {floorImage && floorImage !== "/textures/floor_texture_20x.png" ? (
+                <ImagePreviewRow>
+                  <span style={{ color: "#a6d0ff" }}>已成功载入自定义纹理</span>
+                  <RemoveImageBtn onClick={handleRemoveFloorImage}>清除自定义纹理</RemoveImageBtn>
+                </ImagePreviewRow>
+              ) : (
+                <UploadButton style={{ width: "100%", padding: "10px" }}>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  上传点阵 / 拼接纹理 (JPG/PNG)
+                  <input
+                    ref={floorFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFloorImageUpload}
+                    style={{ display: "none" }}
+                  />
+                </UploadButton>
+              )}
+            </div>
+          )}
 
           {floorImage && (
             <div>
