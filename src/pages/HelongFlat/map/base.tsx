@@ -7,16 +7,14 @@ import {
   ShaderMaterial,
   Shape,
   ShapeGeometry,
-  ExtrudeGeometry,
   Vector2,
   Vector3,
   type Group,
   PlaneGeometry,
-  AlwaysStencilFunc,
-  EqualStencilFunc,
-  ReplaceStencilOp,
   Float32BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
+  LinearFilter,
 } from "three";
 import { getInterpolatedHeight } from "./terrainUtils";
 import { geoMercator } from "d3-geo";
@@ -199,7 +197,6 @@ function City(props: {
   const materialRef = useRef<ShaderMaterial>(null!);
   const skirtRef = useRef<Mesh>(null!);
   const terrainRef = useRef<Mesh>(null!);
-  const stencilRef = useRef<Mesh>(null!);
   const edgeRef = useRef<Group>(null!);
   const labelGroupRef = useRef<Group>(null!);
 
@@ -209,37 +206,81 @@ function City(props: {
   const topoTexture = useTexture(helongTopography);
   const bumpTexture = useTexture(helongBump);
 
-  const [extrudedGeometry, shapeGeometry] = useMemo(() => {
+  const shapeGeometry = useMemo(() => {
     const shapes = data.points.map((e) => new Shape(e));
-    const shapeGeometry = new ShapeGeometry(shapes);
-    const extrudedGeometry = new ExtrudeGeometry(shapes, {
-      depth: 5.0,
-      bevelEnabled: false,
-    });
-    return [extrudedGeometry, shapeGeometry];
+    return new ShapeGeometry(shapes);
   }, [data.points]);
 
-  // Generate highly tessellated 3D terrain grid matching the town's bounding box
-  const terrainData = useMemo(() => {
+  // Find bounding box local stats for dynamic canvas texture mask clipping
+  const [townBBox, tWidth, tHeight] = useMemo(() => {
     const townBBox = new Box2();
     data.points.forEach((ring) => {
       ring.forEach((p) => {
         townBBox.expandByPoint(p);
       });
     });
-
     const tWidth = townBBox.max.x - townBBox.min.x;
     const tHeight = townBBox.max.y - townBBox.min.y;
+    return [townBBox, tWidth, tHeight];
+  }, [data]);
+
+  const cityW = bbox.max.x - bbox.min.x;
+  const cityH = bbox.max.y - bbox.min.y;
+
+  const maskScaleOffset = useMemo(() => {
+    return [
+      cityW / tWidth,
+      cityH / tHeight,
+      (bbox.min.x - townBBox.min.x) / tWidth,
+      (bbox.min.y - townBBox.min.y) / tHeight,
+    ];
+  }, [cityW, cityH, tWidth, tHeight, bbox, townBBox]);
+
+  const maskTexture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    
+    data.points.forEach((ring) => {
+      if (ring.length < 2) return;
+      ctx.beginPath();
+      const p0 = ring[0];
+      const x0 = ((p0.x - townBBox.min.x) / tWidth) * canvas.width;
+      const y0 = ((townBBox.max.y - p0.y) / tHeight) * canvas.height;
+      ctx.moveTo(x0, y0);
+
+      for (let i = 1; i < ring.length; i++) {
+        const p = ring[i];
+        const x = ((p.x - townBBox.min.x) / tWidth) * canvas.width;
+        const y = ((townBBox.max.y - p.y) / tHeight) * canvas.height;
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    const tex = new CanvasTexture(canvas);
+    tex.minFilter = LinearFilter;
+    tex.magFilter = LinearFilter;
+    tex.needsUpdate = true;
+    return tex;
+  }, [data, townBBox, tWidth, tHeight]);
+
+  // Generate highly tessellated 3D terrain grid matching the town's bounding box
+  const terrainData = useMemo(() => {
     const centerX = (townBBox.min.x + townBBox.max.x) / 2;
     const centerY = (townBBox.min.y + townBBox.max.y) / 2;
 
-    // 80x80 segments for high geometric resolution of mountains and valleys
     const geom = new PlaneGeometry(tWidth, tHeight, 80, 80);
     const pos = geom.attributes.position;
     const uv: number[] = [];
-
-    const cityW = bbox.max.x - bbox.min.x;
-    const cityH = bbox.max.y - bbox.min.y;
 
     for (let i = 0; i < pos.count; i++) {
       const px = pos.getX(i);
@@ -248,11 +289,9 @@ function City(props: {
       const worldX = centerX + px;
       const worldY = centerY + py;
 
-      // Extract accurate elevation from DEM data
       const h = getInterpolatedHeight(worldX, worldY);
       pos.setZ(i, h);
 
-      // Map texture coordinates seamlessly relative to the entire city bbox
       const u = (worldX - bbox.min.x) / cityW;
       const v = (worldY - bbox.min.y) / cityH;
       uv.push(u, v);
@@ -262,7 +301,7 @@ function City(props: {
     geom.computeVertexNormals();
 
     return { geom, centerX, centerY };
-  }, [bbox, data]);
+  }, [bbox, townBBox, tWidth, tHeight, cityW, cityH]);
 
   // Generate 3D boundary lines (contour outlines) that ride the elevation curves
   const threeDBoundaryGeoms = useMemo(() => {
@@ -298,8 +337,6 @@ function City(props: {
         const hA = heights[i];
         const hB = heights[nextIdx];
 
-        // 4 vertices of the vertical quad
-        // V0: bottom A, V1: top A, V2: bottom B, V3: top B
         vertices.push(
           pA.x, pA.y, 0,   // V0
           pA.x, pA.y, hA,  // V1
@@ -312,7 +349,6 @@ function City(props: {
         const v2 = vertexCount + 2;
         const v3 = vertexCount + 3;
 
-        // Two triangles forming the quad
         indices.push(v0, v2, v1, v2, v3, v1);
         vertexCount += 4;
       }
@@ -371,10 +407,6 @@ function City(props: {
       terrainRef.current.scale.z = currentScaleZ.current;
     }
     
-    if (stencilRef.current) {
-      stencilRef.current.scale.z = currentScaleZ.current;
-    }
-    
     if (edgeRef.current) {
       edgeRef.current.scale.z = currentScaleZ.current;
     }
@@ -391,11 +423,9 @@ function City(props: {
 
   return (
     <group>
-      {/* 3D Extruded volume to write the stencil mask and capture pointer events */}
+      {/* Flat invisible cap mesh to capture pointer events */}
       <mesh
-        ref={stencilRef}
-        geometry={extrudedGeometry}
-        renderOrder={1}
+        geometry={shapeGeometry}
         onPointerOver={(e) => {
           e.stopPropagation();
           hoverScaleZ.current = 1.4; // 40% height boost on hover for drama
@@ -410,10 +440,6 @@ function City(props: {
         <meshStandardMaterial
           colorWrite={false}
           depthWrite={false}
-          stencilWrite={true}
-          stencilRef={idx + 1}
-          stencilFunc={AlwaysStencilFunc}
-          stencilZPass={ReplaceStencilOp}
         />
       </mesh>
 
@@ -429,11 +455,10 @@ function City(props: {
         </mesh>
       )}
 
-      {/* High-Resolution 3D Terrain cap, physically bumpy and clipped to the exact boundary via Stencil */}
+      {/* High-Resolution 3D Terrain cap, physically bumpy and clipped to the exact boundary via Custom Fragment Shader */}
       <mesh
         ref={terrainRef}
         geometry={terrainData.geom}
-        renderOrder={2}
         position={[terrainData.centerX, terrainData.centerY, 0]}
         raycast={() => null} // Let the flat mesh capture hover pointer events
       >
@@ -448,13 +473,27 @@ function City(props: {
           roughness={0.7}
           side={DoubleSide}
           opacity={0}
-          stencilWrite={true}
-          stencilRef={idx + 1}
-          stencilFunc={EqualStencilFunc}
           onBeforeCompile={(shader: any) => {
+            shader.uniforms.uMaskTex = { value: maskTexture };
+            shader.uniforms.uMaskScaleOffset = { value: maskScaleOffset };
+            
+            shader.fragmentShader = `
+              uniform sampler2D uMaskTex;
+              uniform vec4 uMaskScaleOffset;
+              ${shader.fragmentShader}
+            `;
+            
             shader.fragmentShader = shader.fragmentShader.replace(
               `#include <map_fragment>`,
               `#include <map_fragment>
+               
+               // Sample the dynamic canvas mask texture using local UV
+               vec2 localUv = vMapUv * uMaskScaleOffset.xy + uMaskScaleOffset.zw;
+               vec4 maskVal = texture2D(uMaskTex, localUv);
+               if (maskVal.r < 0.5) {
+                 discard; // Clip anything outside the town boundary!
+               }
+
                #ifdef USE_MAP
                // Saturate the topography texture for professional visualization aesthetics
                float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
