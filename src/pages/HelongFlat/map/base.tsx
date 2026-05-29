@@ -338,10 +338,10 @@ function City(props: {
         const hB = heights[nextIdx];
 
         vertices.push(
-          pA.x, pA.y, 0,   // V0
-          pA.x, pA.y, hA,  // V1
-          pB.x, pB.y, 0,   // V2
-          pB.x, pB.y, hB   // V3
+          pA.x, pA.y, -0.15, // V0 (bottom baseplate at Z = -0.15)
+          pA.x, pA.y, hA,    // V1 (top cap matching terrain elevation)
+          pB.x, pB.y, -0.15, // V2 (bottom baseplate at Z = -0.15)
+          pB.x, pB.y, hB     // V3 (top cap matching terrain elevation)
         );
 
         const v0 = vertexCount;
