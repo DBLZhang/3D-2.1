@@ -7,6 +7,7 @@ import {
   ShaderMaterial,
   Shape,
   ShapeGeometry,
+  ExtrudeGeometry,
   Vector2,
   Vector3,
   type Group,
@@ -198,6 +199,7 @@ function City(props: {
   const materialRef = useRef<ShaderMaterial>(null!);
   const skirtRef = useRef<Mesh>(null!);
   const terrainRef = useRef<Mesh>(null!);
+  const stencilRef = useRef<Mesh>(null!);
   const edgeRef = useRef<Group>(null!);
   const labelGroupRef = useRef<Group>(null!);
 
@@ -207,10 +209,14 @@ function City(props: {
   const topoTexture = useTexture(helongTopography);
   const bumpTexture = useTexture(helongBump);
 
-  const [shapeGeometry] = useMemo(() => {
+  const [extrudedGeometry, shapeGeometry] = useMemo(() => {
     const shapes = data.points.map((e) => new Shape(e));
     const shapeGeometry = new ShapeGeometry(shapes);
-    return [shapeGeometry];
+    const extrudedGeometry = new ExtrudeGeometry(shapes, {
+      depth: 5.0,
+      bevelEnabled: false,
+    });
+    return [extrudedGeometry, shapeGeometry];
   }, [data.points]);
 
   // Generate highly tessellated 3D terrain grid matching the town's bounding box
@@ -365,6 +371,10 @@ function City(props: {
       terrainRef.current.scale.z = currentScaleZ.current;
     }
     
+    if (stencilRef.current) {
+      stencilRef.current.scale.z = currentScaleZ.current;
+    }
+    
     if (edgeRef.current) {
       edgeRef.current.scale.z = currentScaleZ.current;
     }
@@ -381,9 +391,10 @@ function City(props: {
 
   return (
     <group>
-      {/* Flat invisible cap mesh to write the stencil mask and capture pointer events */}
+      {/* 3D Extruded volume to write the stencil mask and capture pointer events */}
       <mesh
-        geometry={shapeGeometry}
+        ref={stencilRef}
+        geometry={extrudedGeometry}
         onPointerOver={(e) => {
           e.stopPropagation();
           hoverScaleZ.current = 1.4; // 40% height boost on hover for drama
@@ -398,7 +409,7 @@ function City(props: {
         <meshStandardMaterial
           transparent
           colorWrite={false}
-          depthWrite={true}
+          depthWrite={false}
           stencilWrite={true}
           stencilRef={idx + 1}
           stencilFunc={AlwaysStencilFunc}
@@ -463,7 +474,7 @@ function City(props: {
       </group>
 
       {/* Floated labels riding on top of the physical mountains */}
-      <group ref={labelGroupRef}>
+      <group ref={labelGroupRef} position={[data.center.x, data.center.y, 0]}>
         <Label
           center
           distanceFactor={10}
