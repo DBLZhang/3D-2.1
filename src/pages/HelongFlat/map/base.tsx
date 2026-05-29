@@ -395,6 +395,7 @@ function City(props: {
       <mesh
         ref={stencilRef}
         geometry={extrudedGeometry}
+        renderOrder={1}
         onPointerOver={(e) => {
           e.stopPropagation();
           hoverScaleZ.current = 1.4; // 40% height boost on hover for drama
@@ -407,7 +408,6 @@ function City(props: {
         }}
       >
         <meshStandardMaterial
-          transparent
           colorWrite={false}
           depthWrite={false}
           stencilWrite={true}
@@ -433,6 +433,7 @@ function City(props: {
       <mesh
         ref={terrainRef}
         geometry={terrainData.geom}
+        renderOrder={2}
         position={[terrainData.centerX, terrainData.centerY, 0]}
         raycast={() => null} // Let the flat mesh capture hover pointer events
       >
