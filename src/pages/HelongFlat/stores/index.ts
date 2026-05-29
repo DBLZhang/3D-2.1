@@ -23,6 +23,11 @@ interface ConfigStore {
   bgRepeat: boolean;
   bgSize: number;
 
+  // Ground Floor Customizations
+  floorColor: string;
+  floorImage: string | null;
+  floorRepeat: number;
+
   toggle: (key: keyof Omit<ConfigStore, "toggle" | "reset" | "setField">) => void;
   setField: <K extends keyof Omit<ConfigStore, "toggle" | "reset" | "setField">>(
     key: K,
@@ -49,6 +54,10 @@ export const useConfigStore = create<ConfigStore>()(
     bgRepeat: false,
     bgSize: 200,
 
+    floorColor: "#011024",
+    floorImage: null,
+    floorRepeat: 20,
+
     toggle: (key) => set((s) => ({ [key]: !s[key] })),
     setField: (key, value) => set(() => ({ [key]: value })),
     reset: () =>
@@ -68,6 +77,10 @@ export const useConfigStore = create<ConfigStore>()(
         bgImage: null,
         bgRepeat: false,
         bgSize: 200,
+
+        floorColor: "#011024",
+        floorImage: null,
+        floorRepeat: 20,
       }),
   }))
 );

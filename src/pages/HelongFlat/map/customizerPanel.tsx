@@ -396,6 +396,7 @@ const SwitchSlider = styled.span<{ $checked: boolean }>`
 export default function CustomizerPanel() {
   const [isOpen, setIsOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const floorFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     heightScale,
@@ -411,6 +412,9 @@ export default function CustomizerPanel() {
     bgImage,
     bgRepeat,
     bgSize,
+    floorColor,
+    floorImage,
+    floorRepeat,
     setField,
     reset,
   } = useConfigStore();
@@ -438,6 +442,24 @@ export default function CustomizerPanel() {
     setField("bgImage", null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFloorImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setField("floorImage", event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveFloorImage = () => {
+    setField("floorImage", null);
+    if (floorFileInputRef.current) {
+      floorFileInputRef.current.value = "";
     }
   };
 
@@ -542,6 +564,90 @@ export default function CustomizerPanel() {
               />
             </ColorPickerContainer>
           </ColorRow>
+        </ControlGroup>
+      </Section>
+
+      {/* 地平面渐变与纹理 */}
+      <Section>
+        <SectionTitle>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          地平面渐变与纹理 (Floor Tiling)
+        </SectionTitle>
+        <ControlGroup>
+          <ColorRow>
+            <ColorLabel>地平渐变底色 (中心色)</ColorLabel>
+            <ColorPickerContainer>
+              <ColorHex>{floorColor}</ColorHex>
+              <ColorPreviewCircle $color={floorColor} />
+              <NativeColorInput
+                type="color"
+                value={floorColor}
+                onChange={(e) => handleColorChange("floorColor", e.target.value)}
+              />
+            </ColorPickerContainer>
+          </ColorRow>
+
+          <div>
+            <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>地平面上传图片 / 拼接纹理</span>
+            {floorImage ? (
+              <ImagePreviewRow>
+                <span style={{ color: "#a6d0ff" }}>已成功载入拼接纹理</span>
+                <RemoveImageBtn onClick={handleRemoveFloorImage}>清除拼接纹理</RemoveImageBtn>
+              </ImagePreviewRow>
+            ) : (
+              <UploadButton>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                上传点阵 / 拼接纹理 (JPG/PNG)
+                <input
+                  ref={floorFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFloorImageUpload}
+                  style={{ display: "none" }}
+                />
+              </UploadButton>
+            )}
+          </div>
+
+          {floorImage && (
+            <div>
+              <LabelRow>
+                <span>平铺拼接重复次数</span>
+                <ValueDisplay>{floorRepeat}x</ValueDisplay>
+              </LabelRow>
+              <Slider
+                type="range"
+                min="1"
+                max="100"
+                step="1"
+                value={floorRepeat}
+                onChange={(e) => setField("floorRepeat", parseInt(e.target.value))}
+              />
+            </div>
+          )}
         </ControlGroup>
       </Section>
 
