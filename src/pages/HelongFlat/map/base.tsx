@@ -487,8 +487,9 @@ function City(props: {
               `#include <map_fragment>`,
               `#include <map_fragment>
                
-               // Sample the dynamic canvas mask texture using local UV
+               // Sample the dynamic canvas mask texture using local UV (with Y flipped for Canvas-to-WebGL mapping)
                vec2 localUv = vMapUv * uMaskScaleOffset.xy + uMaskScaleOffset.zw;
+               localUv.y = 1.0 - localUv.y;
                vec4 maskVal = texture2D(uMaskTex, localUv);
                if (maskVal.r < 0.5) {
                  discard; // Clip anything outside the town boundary!
