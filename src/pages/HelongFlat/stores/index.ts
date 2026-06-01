@@ -34,11 +34,12 @@ interface ConfigStore {
   skyAzimuth: number;
   skyRayleigh: number;
   skyTurbidity: number;
-  skyMode: "procedural" | "panorama";
-  skyPreset: "none" | "sunset" | "orchard" | "night";
+  skyMode: "procedural" | "panorama" | "color";
+  skyPreset: "default" | "sunset" | "orchard" | "night" | "kloppenheim" | "qwantani" | "none";
   skyImage: string | null;
   skySunGlow: boolean;
   skySunScale: number;
+  skyColor: string;
 
   toggle: (key: keyof Omit<ConfigStore, "toggle" | "reset" | "setField">) => void;
   setField: <K extends keyof Omit<ConfigStore, "toggle" | "reset" | "setField">>(
@@ -76,10 +77,11 @@ export const useConfigStore = create<ConfigStore>()(
     skyRayleigh: 3.0,
     skyTurbidity: 8.0,
     skyMode: "procedural",
-    skyPreset: "none",
+    skyPreset: "default",
     skyImage: null,
     skySunGlow: true,
     skySunScale: 10,
+    skyColor: "#0a1526",
 
     toggle: (key) => set((s) => ({ [key]: !s[key] })),
     setField: (key, value) => set(() => ({ [key]: value })),
@@ -111,10 +113,11 @@ export const useConfigStore = create<ConfigStore>()(
         skyRayleigh: 3.0,
         skyTurbidity: 8.0,
         skyMode: "procedural",
-        skyPreset: "none",
+        skyPreset: "default",
         skyImage: null,
         skySunGlow: true,
         skySunScale: 10,
+        skyColor: "#0a1526",
       }),
   }))
 );

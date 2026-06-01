@@ -102,6 +102,7 @@ export default function Map() {
   const skyTurbidity = useConfigStore((s) => s.skyTurbidity);
   const skyMode = useConfigStore((s) => s.skyMode);
   const skyImage = useConfigStore((s) => s.skyImage);
+  const skyColor = useConfigStore((s) => s.skyColor);
 
   // Compute 3D Sun Position based on inclination and azimuth
   const sunPosition = useMemo(() => {
@@ -116,6 +117,7 @@ export default function Map() {
 
   // Compute dynamic horizon color for perfect fog synchronization
   const horizonColor = useMemo(() => {
+    if (skyMode === "color") return skyColor;
     const color = new Color();
     if (skyInclination > 0.15) {
       // Day: transition from deep blue base to gorgeous sky horizon
@@ -131,7 +133,7 @@ export default function Map() {
       color.set("#d35400").lerp(new Color("#020408"), t);
     }
     return color.getStyle();
-  }, [skyInclination]);
+  }, [skyInclination, skyMode, skyColor]);
 
   // Load uploaded panorama Base64 texture
   const uploadedTexture = useMemo(() => {
@@ -161,6 +163,7 @@ export default function Map() {
         }}
         gl={{ stencil: true, alpha: true }}
         dpr={[1, 2]}>
+          {skyMode === "color" && <color attach="background" args={[skyColor]} />}
           <fog attach="fog" args={[horizonColor, 15, 55]} />
           
           {skyMode === "procedural" ? (
@@ -172,7 +175,7 @@ export default function Map() {
               mieCoefficient={0.005}
               mieDirectionalG={0.8}
             />
-          ) : (
+          ) : skyMode === "panorama" ? (
             <mesh scale={[-1, 1, 1]}>
               <sphereGeometry args={[450, 60, 40]} />
               {uploadedTexture ? (
@@ -187,7 +190,7 @@ export default function Map() {
                 />
               )}
             </mesh>
-          )}
+          ) : null}
 
           <GlowingSun />
           <Lights />

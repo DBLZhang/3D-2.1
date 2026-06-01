@@ -425,6 +425,7 @@ export default function CustomizerPanel() {
     skyImage,
     skySunGlow,
     skySunScale,
+    skyColor,
     floorImageMode,
     setField,
     reset,
@@ -488,16 +489,16 @@ export default function CustomizerPanel() {
   };
 
   const handleRemoveSkyImage = () => {
-    setField("skyPreset", "none");
+    setField("skyPreset", "default");
     setField("skyImage", null);
     if (skyFileInputRef.current) {
       skyFileInputRef.current.value = "";
     }
   };
 
-  const handleSelectSkyPreset = (preset: "none" | "sunset" | "orchard" | "night") => {
+  const handleSelectSkyPreset = (preset: "default" | "sunset" | "orchard" | "night" | "kloppenheim" | "qwantani") => {
     setField("skyPreset", preset);
-    if (preset === "none") {
+    if (preset === "default") {
       setField("skyImage", null);
     } else if (preset === "sunset") {
       setField("skyImage", "/skybox/belfast_sunset_puresky.jpg");
@@ -505,6 +506,10 @@ export default function CustomizerPanel() {
       setField("skyImage", "/skybox/citrus_orchard_puresky.jpg");
     } else if (preset === "night") {
       setField("skyImage", "/skybox/rogland_clear_night.jpg");
+    } else if (preset === "kloppenheim") {
+      setField("skyImage", "/skybox/kloppenheim_07_puresky.jpg");
+    } else if (preset === "qwantani") {
+      setField("skyImage", "/skybox/qwantani_night_puresky.jpg");
     }
   };
 
@@ -652,6 +657,9 @@ export default function CustomizerPanel() {
               <Chip $active={skyMode === "panorama"} onClick={() => setField("skyMode", "panorama")}>
                 🌌 360° 全景背景贴图
               </Chip>
+              <Chip $active={skyMode === "color"} onClick={() => setField("skyMode", "color")}>
+                🎨 天空纯色背景
+              </Chip>
             </ChipContainer>
           </div>
 
@@ -719,10 +727,13 @@ export default function CustomizerPanel() {
                 />
               </div>
             </>
-          ) : (
+          ) : skyMode === "panorama" ? (
             <div>
               <span style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>内置 360° 全景天空预设</span>
               <ChipContainer style={{ marginBottom: "12px" }}>
+                <Chip $active={skyPreset === "default"} onClick={() => handleSelectSkyPreset("default")}>
+                  ✨ 默认科幻星空
+                </Chip>
                 <Chip $active={skyPreset === "sunset"} onClick={() => handleSelectSkyPreset("sunset")}>
                   🌅 贝尔法斯特黄昏
                 </Chip>
@@ -731,6 +742,12 @@ export default function CustomizerPanel() {
                 </Chip>
                 <Chip $active={skyPreset === "night"} onClick={() => handleSelectSkyPreset("night")}>
                   🌌 罗格兰晴空夜
+                </Chip>
+                <Chip $active={skyPreset === "kloppenheim"} onClick={() => handleSelectSkyPreset("kloppenheim")}>
+                  🌳 克洛彭海姆晴空
+                </Chip>
+                <Chip $active={skyPreset === "qwantani"} onClick={() => handleSelectSkyPreset("qwantani")}>
+                  🏔️ 夸恩塔尼之夜
                 </Chip>
               </ChipContainer>
 
@@ -758,6 +775,21 @@ export default function CustomizerPanel() {
                   />
                 </UploadButton>
               )}
+            </div>
+          ) : (
+            <div>
+              <ColorRow style={{ padding: 0 }}>
+                <ColorLabel>天空纯色底色</ColorLabel>
+                <ColorPickerContainer>
+                  <ColorHex>{skyColor}</ColorHex>
+                  <ColorPreviewCircle $color={skyColor} />
+                  <NativeColorInput
+                    type="color"
+                    value={skyColor}
+                    onChange={(e) => handleColorChange("skyColor", e.target.value)}
+                  />
+                </ColorPickerContainer>
+              </ColorRow>
             </div>
           )}
 
